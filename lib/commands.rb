@@ -2,7 +2,7 @@ module CSVPort
 
   module Commands
 
-    def newproject(path)
+    def self.newproject(path)
       Dir.mkdir(path) unless Dir.exists?(path)
       folders = ['data', 'db', 'bin', 'lib']
       folders.each do |folder|

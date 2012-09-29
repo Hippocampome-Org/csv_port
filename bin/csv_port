@@ -2,14 +2,15 @@
 
 $LOAD_PATH.unshift(File.expand_path("../../lib", "__FILE__"))
 require 'commands'
-
+require 'pry'
 module CSVPort
 
   command = ARGV.first
 
   begin
-    Commands.send(command, ARGV[1..-1])
-  rescue NoMethodError
+    Commands.send(command, *ARGV[1..-1])
+  rescue NoMethodError => e
+    binding.pry
     puts "Command not defined"
     #puts "USAGE: ..."
   rescue ArgumentError
