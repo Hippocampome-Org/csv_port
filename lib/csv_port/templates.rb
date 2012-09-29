@@ -6,8 +6,9 @@ module CSVPort
 
     class << self
 
-      attr_reader :build_script
+      attr_reader :build
       attr_reader :config
+      attr_reader :db_connection
       attr_reader :error_log
 
     end
@@ -51,14 +52,30 @@ module CSVPort
         #PATH_HASH = mary_data_hash.merge(helper_data_hash).merge(error_data_hash).merge(error_by_spreadsheet_hash)  # .merge(count_data_hash)
       CONFIG
 
+      @db_connection = "DB = Sequel.mysql2(DB_NAME, user: DB_USERNAME, password: DB_PASSWORD, encoding: DB_ENCODING)"
+
       @error_log = "[]"
 
-      @build_script = <<-BUILD.outdent
+      @build = <<-BUILD.outdent
         #!/usr/bin/env ruby
 
-        require 'csv_port/builder'
+        $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 
-        Builder.build
+        require 'csv_port/builder'
+        require 'methadone'
+
+        include Methadone::Main
+
+        main do
+          path = File.expand_path('../'..', '__FILE__')
+          builder = Builder.new(path, options)
+          Builder.build
+        end
+
+        on("-e", "--empty", "Empty the database")
+        on("-u", "--update", "Update the database")
+
+        description "Builds the database from source files"
       BUILD
   end
 end

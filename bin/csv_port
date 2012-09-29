@@ -9,7 +9,7 @@ module CSVPort
 
   begin
     Commands.send(command, *ARGV[1..-1])
-  rescue NoMethodError => e
+  rescue NoMethodError
     binding.pry
     puts "Command not defined"
     #puts "USAGE: ..."
