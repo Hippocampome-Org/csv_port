@@ -10,14 +10,16 @@ module CSVPort
   # copies a set of files from the indirpath to the outdirpath
   def self.build_directory(indirpath, outdirpath, target_filenames, opts={})
     encoding = opts[:encoding]
+    Dir.mkdir(outdirpath) if not Dir.exists?(outdirpath)
     indir, outdir = Dir.new(indirpath), Dir.new(outdirpath)
     filenames = indir.select { |filename| target_filenames.include?(filename) }
-    filenames.each { |filename| convert_copy(filename, outdir, encoding) }
+    filepaths = filenames.map { |filename| File.absolute_path(filename, indir) }
+    filepaths.each { |filepath| convert_copy(filepath, outdir, encoding, verbose: true) }
   end
 
   def self.convert_copy(file, outdir, target_encoding, opts={})
     verbose = (opts[:verbose] or true)
-    outfilepath = File.absolute_path(file, outdir)
+    outfilepath = File.absolute_path(File.basename(file), outdir)
     puts "File: " + file.inspect if verbose
     content = File.read(file)
     encoding_data = CharDet.detect(content)

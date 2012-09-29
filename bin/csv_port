@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift(File.expand_path("../../lib", "__FILE__"))
+require 'commands'
+
+module CSVPort
+
+  command = ARGV.first
+
+  begin
+    Commands.send(command, ARGV[1..-1])
+  rescue NoMethodError
+    puts "Command not defined"
+    #puts "USAGE: ..."
+  rescue ArgumentError
+    puts "Wrong arguments"
+    # puts "USAGE: ..." (for particular command)
+  end
+
+end
