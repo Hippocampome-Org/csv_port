@@ -1,3 +1,5 @@
+require 'outdent'
+
 module CSVPort
 
   module Templates
@@ -10,7 +12,7 @@ module CSVPort
 
     end
 
-      @config = <<-CONFIG
+      @config = <<-CONFIG.outdent
         require 'json'
         #require 'pry'
 
@@ -51,7 +53,7 @@ module CSVPort
 
       @error_log = "[]"
 
-      @build_script = <<-BUILD
+      @build_script = <<-BUILD.outdent
         #!/usr/bin/env ruby
 
         require 'csv_port/builder'
