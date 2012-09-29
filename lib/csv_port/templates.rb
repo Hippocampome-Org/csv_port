@@ -2,10 +2,13 @@ module CSVPort
 
   module Templates
 
-    attr_reader :config
-    attr_reader :error_log
-
     class << self
+
+      attr_reader :build_script
+      attr_reader :config
+      attr_reader :error_log
+
+    end
 
       @config = <<-CONFIG
         require 'json'
@@ -18,8 +21,12 @@ module CSVPort
 
         PORTING_LIBRARY = "!!NAME!!"
 
-        SOURCE_DATA_FILENAMES = [TODO]
-        HELPER_DATA_FILENAMES = [TODO]
+        SOURCE_DATA_FILENAMES = [
+          TODO
+        ]
+        HELPER_DATA_FILENAMES = [
+          TODO
+        ]
         ERROR_LOG_FILENAMES = ['error_log.json']
 
         DATA_DIRECTORY = File.expand_path("../data", "__FILE__")
@@ -40,12 +47,16 @@ module CSVPort
         end
 
         #PATH_HASH = mary_data_hash.merge(helper_data_hash).merge(error_data_hash).merge(error_by_spreadsheet_hash)  # .merge(count_data_hash)
-        #HELPER_HASH = Hash[ HELPER_DATA_FILENAMES.zip(HELPER_DATA_FILENAMES.map { |key| JSON.parse(File.read(PATH_HASH[key]), symbolize_names: true) }) ]
-        #ERROR_HASH = {}
       CONFIG
 
       @error_log = "[]"
 
-    end
+      @build_script = <<-BUILD
+        #!/usr/bin/env ruby
+
+        require 'csv_port/builder'
+
+        Builder.build
+      BUILD
   end
 end

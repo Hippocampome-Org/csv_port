@@ -1,6 +1,7 @@
 require 'rchardet19'
 
 require 'csv_port/version'
+require 'csv_port/commands'
 require 'csv_port/csv_cleaner'
 require 'csv_port/row_validator'
 require 'csv_port/sequel_loader'

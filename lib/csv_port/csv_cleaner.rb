@@ -12,6 +12,7 @@ module CSVPort
     attr_accessor :headers
     attr_accessor :row_transform 
     attr_accessor :row_class
+    attr_accessor :table
 
     def initialize(infilepath, opts={})
       @row_validator_class = opts[:row_validator_class] or nil
@@ -63,18 +64,18 @@ module CSVPort
       @rows.compact!  # remove nil values that replace invalid rows
     end
 
-    def validate_row(row)
-      check_for_empty_row
-      empty_fields = self.class.required_fields.map { |f| row[f] ? nil : f }
-      empty_fields.compact!
-      $column = empty_fields
-      #binding.pry if row.has_key?(:authors)
-      raise HippoDataError.new(:incomplete_row) unless empty_fields.empty?
+    def make_csv_table
+      CSV::Table.new(@rows)
     end
 
-    def table
-      @table
-    end
+    #def validate_row(row)
+      #check_for_empty_row
+      #empty_fields = self.class.required_fields.map { |f| row[f] ? nil : f }
+      #empty_fields.compact!
+      #$column = empty_fields
+      ##binding.pry if row.has_key?(:authors)
+      #raise HippoDataError.new(:incomplete_row) unless empty_fields.empty?
+    #end
 
     def hash_rows
       @table.map { |row| row.to_hash }
