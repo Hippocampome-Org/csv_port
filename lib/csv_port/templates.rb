@@ -81,6 +81,8 @@ module CSVPort
 
       
       @lib_base = <<-LIB_BASE.outdent
+        !!REQUIRE!!
+
         module !!NAME!!
 
         end

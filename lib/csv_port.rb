@@ -1,10 +1,12 @@
 require 'rchardet19'
 
 require 'csv_port/version'
+require 'csv_port/builder'
 require 'csv_port/commands'
 require 'csv_port/csv_cleaner'
-require 'csv_port/row_validator'
+require 'csv_port/record_validator'
 require 'csv_port/sequel_loader'
+require 'csv_port/source_file'
 require 'csv_port/templates'
 
 module CSVPort

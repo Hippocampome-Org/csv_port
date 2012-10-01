@@ -3,19 +3,28 @@
 $LOAD_PATH.unshift(File.expand_path("../../lib", "__FILE__"))
 require 'csv_port'
 require 'pry'
+
+include Methadone::Main
+
 module CSVPort
 
   command = ARGV.first
 
-  begin
-    Commands.send(command, *ARGV[1..-1])
-  rescue NoMethodError
-    binding.pry
-    puts "Command not defined"
-    #puts "USAGE: ..."
-  rescue ArgumentError
-    puts "Wrong arguments"
-    # puts "USAGE: ..." (for particular command)
+  main do
+    begin
+      args = ARGV[1..-1] << options
+      Commands.send(command, *args)
+    rescue NoMethodError
+      binding.pry
+      puts "Command not defined"
+      #puts "USAGE: ..."
+    rescue ArgumentError
+      puts "Wrong arguments"
+      # puts "USAGE: ..." (for particular command)
+    end
   end
+
+  # Temporary solution until I can figure out how to pass options to the command itself
+  on("-c", "--config", "Use config file")
 
 end
