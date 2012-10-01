@@ -8,6 +8,7 @@ module CSVPort
       @root_path = root_path
       @project_name = File.basename(root_path)
       @config_filepath = opts[:config_filepath]
+      binding.pry
       Dir.mkdir(root_path) unless Dir.exists?(root_path)
       folders = ['data', 'db', 'bin', 'lib', "lib/#{project_name}"]
       folders.each do |folder|

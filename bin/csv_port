@@ -2,19 +2,19 @@
 
 $LOAD_PATH.unshift(File.expand_path("../../lib", "__FILE__"))
 require 'csv_port'
+require 'methadone'
 require 'pry'
-
-include Methadone::Main
 
 module CSVPort
 
-  command = ARGV.first
+  include Methadone::Main
 
-  main do
+  main do |*args|
     begin
-      args = ARGV[1..-1] << options
+      command = args.first
+      command_args = args[1..-1] << options
       Commands.send(command, *args)
-    rescue NoMethodError
+    rescue NoMethodError => e
       binding.pry
       puts "Command not defined"
       #puts "USAGE: ..."
@@ -25,6 +25,8 @@ module CSVPort
   end
 
   # Temporary solution until I can figure out how to pass options to the command itself
-  on("-c", "--config", "Use config file")
+  on("-c CONFIG", "--config", "Use config file")
+
+  go!
 
 end
