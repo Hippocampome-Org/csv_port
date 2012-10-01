@@ -13,7 +13,31 @@ module CSVPort
 
     end
 
+      @build = <<-BUILD.outdent
+          #!/usr/bin/env ruby
+
+          $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+
+          require 'csv_port/builder'
+          require 'methadone'
+
+          include Methadone::Main
+
+          main do
+            path = File.expand_path('../'..', '__FILE__')
+            builder = Builder.new(path, options)
+            Builder.build
+          end
+
+          on("-e", "--empty", "Empty the database")
+          on("-u", "--update", "Update the database")
+
+          description "Builds the database from source files"
+        BUILD
+
+
       @config = <<-CONFIG.outdent
+        require 'csv_port'
         require 'json'
         #require 'pry'
 
@@ -24,58 +48,43 @@ module CSVPort
 
         PORTING_LIBRARY = "!!NAME!!"
 
-        SOURCE_DATA_FILENAMES = [
-          TODO
+        SOURCE_DATA = [
+          {
+            filename: TODO,
+            cleaner: !!NAME!!::TODO,
+            record_validator: TODO,
+            record_loader: TODO
+          },
+          ... ADD OTHER ENTRIES HERE
         ]
-        HELPER_DATA_FILENAMES = [
-          TODO
+
+        HELPER_DATA = [
+          TODO (should be an array of filenames)
         ]
-        ERROR_LOG_FILENAMES = ['error_log.json']
+
+        ERROR_DATA = [
+          'error_log.json'
+        ]
 
         DATA_DIRECTORY = File.expand_path("../data", "__FILE__")
         EXTERNAL_SOURCE_DATA_DIRECTORY = "TODO"
         SOURCE_DATA_DIRECTORY = File.expand_path('source', DATA_DIRECTORY)
         HELPER_DATA_DIRECTORY = File.expand_path('helper', DATA_DIRECTORY)
-        ERROR_LOG_DIRECTORY = DATA_DIRECTORY
-
-        SOURCE_DATA_HASH, HELPER_DATA_HASH, ERROR_LOG_HASH = ['SOURCE_DATA', 'HELPER_DATA', 'ERROR_LOG'].map do |data_type|
-          filenames = eval(data_type + "_FILENAMES")
-          directory = eval(data_type + "_DIRECTORY")
-          hash = Hash [
-            filenames.map do |filename|
-              extension = File.extname(filename)
-              [filename.chomp(extension).to_sym, {filename: filename, filetype: extension.delete('.'), path: File.expand_path(filename, directory)}]
-            end  
-          ]
-        end
-
-        #PATH_HASH = mary_data_hash.merge(helper_data_hash).merge(error_data_hash).merge(error_by_spreadsheet_hash)  # .merge(count_data_hash)
+        ERROR_DATA_DIRECTORY = DATA_DIRECTORY
       CONFIG
+
 
       @db_connection = "DB = Sequel.mysql2(DB_NAME, user: DB_USERNAME, password: DB_PASSWORD, encoding: DB_ENCODING)"
 
+
       @error_log = "[]"
 
-      @build = <<-BUILD.outdent
-        #!/usr/bin/env ruby
+      
+      @lib_base = <<-LIB_BASE.outdent
+        module !!NAME!!
 
-        $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
-
-        require 'csv_port/builder'
-        require 'methadone'
-
-        include Methadone::Main
-
-        main do
-          path = File.expand_path('../'..', '__FILE__')
-          builder = Builder.new(path, options)
-          Builder.build
         end
+      LIB_BASE
 
-        on("-e", "--empty", "Empty the database")
-        on("-u", "--update", "Update the database")
-
-        description "Builds the database from source files"
-      BUILD
   end
 end

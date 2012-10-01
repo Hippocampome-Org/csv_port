@@ -4,18 +4,16 @@ module CSVPort
 
     class << self
       attr_accessor :field_mapping
-      attr_accessor :filename
       attr_accessor :required_fields
     end
 
     attr_accessor :rows
+    attr_accessor :record_transform 
     attr_accessor :headers
-    attr_accessor :row_transform 
-    attr_accessor :row_class
     attr_accessor :table
 
     def initialize(infilepath, opts={})
-      @row_validator_class = opts[:row_validator_class] or nil
+      @record_validator = opts[:record_validator] or nil
       @raw_rows = CSV.read(infilepath)
       @headers, @rows = nil, nil
       @table = clean
@@ -27,13 +25,13 @@ module CSVPort
       map_headers_to_internal_names  # replaces headers with value from @field_mapping or nil if not present
       remove_unmapped_columns  # remove columns not present in @field_mapping
       convert_array_rows_to_hashes  # headers become the keys
-      remove_badly_formed_rows if @row_validator_class  # all rows are accepted if no validator is provided
+      remove_badly_formed_rows if @record_validator  # all rows are accepted if no validator is provided
       table = make_csv_table  # CSV::Table class
     end
 
     def prepare_headers
       @headers = @rows.shift
-      @row_transform = 2  # +1 for counting from 0, +1 for header row
+      @record_transform = 2  # +1 for counting from 0, +1 for header row
     end
 
     def trim_whitespace_from_headers
@@ -51,15 +49,15 @@ module CSVPort
       @headers.compact! 
     end
 
-    def convert_array_rows_to_hashes
+    def convert_array_rows_to_hashes  # this allows us to map in the next step
       @rows = rows.map { |row| Hash[ @headers.zip(row) ] }
     end
 
     def remove_badly_formed_rows  # globals are set for the validator to log errors
       $file = @filename
       @rows = @rows.map.with_index do |row, i|
-        $row = i + @row_transform
-        @row_validator_class.new(row).validate
+        $row = i + @record_transform
+        @record_validator.new(row).validate
       end
       @rows.compact!  # remove nil values that replace invalid rows
     end

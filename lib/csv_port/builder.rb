@@ -5,22 +5,39 @@
 # as the script.  Before executing, the script will prompt for a username and password for MySQL.
 # Note that this script requires Ruby 1.9.3 and the mysql2 and sequel gems.
 
+require 'csv'
+require 'json'
+require 'pry'
 
 require 'csv_port'
-#require 'optparse'
-require 'pry'
 
 module CSVPort
 
   class Builder
 
-    def initialize(path, options={})
+    class << self
+      attr_accessor :auxilary_loader_methods
+    end
+
+    # Should all return arrays of hashes
+    @auxilary_loader_methods = {
+      'csv' => lambda { |filepath| CSV.read(filepath, headers: true).map{ |row| row.to_hash }},
+      'json' => lambda { |filepath| JSON.load(File.new(filepath, 'r')) },
+      #'yaml' => { class: YAML, method: :load },
+      #'yml' => { class: YAML, method: :load },
+    }
+
+    AuxilaryFile = Struct.new(:filename, :filetype, :filepath, :data)
+
+    def initialize(path, project_name=nil, options={})
       @path = path
       @options = options
+      @project_name ||= File.basename(path) 
     end
 
     def build
       set_up_environment
+      initialize_source_metadata
       update_source_files if @options[:update_source_files]  # copies and converts all source data to utf-8
       empty_database if @options[:empty_database]  # will erase current database of name 'hippocampome'
       open_database_connection
@@ -29,7 +46,7 @@ module CSVPort
       initialize_helper_data
       initialize_error_log
       begin
-        SOURCE_DATA_HASH.keys.each { |table| load_table(table) }
+        source_data_hash.values.each { |source_file| load_source_file(source_file) }
       ensure
         update_helper_data
         write_error_logs
@@ -43,8 +60,17 @@ module CSVPort
       require File.expand_path('config', @path)
     end
 
+    def initialize_source_metadata
+      source_data_pairs = SOURCE_DATA.map do |source|
+          key = source[:filename].chomp(File.extname(source[:filename])) 
+          value = SourceFile.new(*source.values, SOURCE_DATA_DIRECTORY)
+          [key, value]
+        end
+      Hash [ source_data_pairs ]
+    end
+
     def update_csvs
-      filenames = SOURCE_DATA_HASH.map { |symbol, hash| hash[:filename] }
+      filenames = @source_data_hash.map { |symbol, source_file| source_file.filename }
       CSVPort.build_directory(EXTERNAL_SOURCE_DATA_DIRECTORY, SOURCE_DATA_DIRECTORY, filenames, encoding: "utf-8")
     end
 
@@ -68,42 +94,34 @@ module CSVPort
     end
 
     def initialize_helper_data
-      HELPER_DATA_HASH.each do |symbol, hash|
-        hash.update({ data: JSON.load(hash[:path]) })
+      helper_data_pairs = HELPER_DATA.map do |filename|
+        key = filename.chomp(File.extname(filename)).to_sym
+        value = create_auxilary_file(filename, HELPER_DATA_DIRECTORY)
+        [key, value]
       end
+      Hash[ helper_data_pairs ]
     end
 
-    def initialize_error_log
-      ERROR_LOG_HASH.each do |symbol, hash|
-        hash.update({ data: [] })
+    def initialize_error_data
+      error_data_pairs = ERROR_DATA.map do |filename|
+        key = filename.chomp(File.extname(filename)).to_sym
+        value = create_auxilary_file(filename, HELPER_DATA_DIRECTORY)
+        [key, value]
       end
+      Hash[ error_data_pairs ]
     end
 
-    def load_table(table)
-      $file = SOURCE_DATA_HASH[table][filename]
-      table_class_str = table.to_s.split('_').map{ |word| word[0].upcase + word[1..-1] }.join('')
-      print_str = table.to_s.gsub('_', ' ').upcase
-      puts "---BUILDING #{print_str} TABLE......................"
-      cleaned_table = clean_table(table, table_class_str)
-      rows = cleaned_table.hash_rows
-      rows.each_with_index do |row, i|
-        $row = i + cleaned_table.row_transform
-        load_row(table, table_class_str, row)
-      end
-      puts "----- #{print_str} TABLE BUILT......................"
-    end
+        def create_auxilary_file(filename, directory)
+          extension = File.extname(filename)
+          filetype= extension.delete('.')
+          loader_method = self.class.auxilary_loader_methods[filetype]
+          filepath = File.expand_path(filename, directory)
+          data = loader_method.call(filepath)
+          AuxilaryFile.new(filename, filetype, filepath, data)
+        end
 
-    def clean_table(table_class_str)
-      cleaner_class = "Hippo::" + table_class_str + "CSVCleaner"
-      command = cleaner_class + ".new(" + SOURCE_DATA_HASH[table][path] +")"
-      cleaned_table = eval(command)
-    end
-
-    def load_row(table, table_class_str, row)
-      loader_class = table_class_str + "RowLoader"
-      command = loader_class + ".new(row).load"
-    rescue LoadingError => e
-      e.log
+    def load_source_file(source_file)
+      source_file.load
     end
 
     def update_helper_data
