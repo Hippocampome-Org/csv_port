@@ -36,7 +36,6 @@ module CSVPort
     end
 
     def build
-      begin
       set_up_environment
       open_database_connection
       load_models
@@ -45,12 +44,11 @@ module CSVPort
       update_source_files if @options[:update_source_files]  # copies and converts all source data to utf-8
       empty_database if @options[:empty_database]  # will erase current database of name 'hippocampome'
       initialize_helper_data
-      initialize_error_log
-      rescue StandardError => e
-        binding.pry
-      end
+      initialize_error_data
       begin
         @source_data_hash.values.each { |source_file| load_source_file(source_file) }
+      rescue StandardError => e
+        binding.pry
       ensure
         update_helper_data
         write_error_logs
@@ -82,7 +80,7 @@ module CSVPort
           value = SourceFile.new(source, SOURCE_DATA_DIRECTORY)
           [key, value]
         end
-      Hash [ source_data_pairs ]
+      @source_data_hash = Hash[ source_data_pairs ]
     end
 
     def update_csvs
@@ -103,16 +101,16 @@ module CSVPort
         value = create_auxilary_file(filename, HELPER_DATA_DIRECTORY)
         [key, value]
       end
-      Hash[ helper_data_pairs ]
+      HELPER_DATA_HASH = Hash[ helper_data_pairs ]
     end
 
     def initialize_error_data
       error_data_pairs = ERROR_DATA.map do |filename|
         key = filename.chomp(File.extname(filename)).to_sym
-        value = create_auxilary_file(filename, HELPER_DATA_DIRECTORY)
+        value = create_auxilary_file(filename, ERROR_DATA_DIRECTORY)
         [key, value]
       end
-      Hash[ error_data_pairs ]
+      ERROR_DATA_HASH = Hash[ error_data_pairs ]
     end
 
         def create_auxilary_file(filename, directory)

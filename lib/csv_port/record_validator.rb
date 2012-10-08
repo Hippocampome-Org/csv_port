@@ -42,7 +42,7 @@ module CSVPort
       end
     end
 
-    def validate
+    def process
       @tests.each do |test|
         $field = test[:field]
         pass = test[:test].call

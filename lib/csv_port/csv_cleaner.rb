@@ -15,11 +15,12 @@ module CSVPort
     def initialize(infilepath, opts={})
       @row_validator = opts[:row_validator] or nil
       @row_processor = opts[:row_processor] or nil
-      @raw_rows = CSV.read(infilepath)
-      @headers, @rows = nil, nil
+      @rows = CSV.read(infilepath)
+      @headers = nil
     end
 
     def process
+      $field_mapping = @field_mapping
       prepare_headers  # manipulates upper part of CSV to obtain a top row of headers ready for mapping
       trim_whitespace_from_headers
       map_headers_to_internal_names  # replaces headers with value from @field_mapping or nil if not present
@@ -27,7 +28,7 @@ module CSVPort
       convert_array_rows_to_hashes  # headers become the keys
       remove_badly_formed_rows if @row_validator  # all rows are accepted if no validator is provided
       subprocess_rows if @processor
-      hash_rows
+      get_records
     end
 
     def prepare_headers
@@ -43,7 +44,7 @@ module CSVPort
       @headers.map!{ |h| self.class.field_mapping[h] }
     end
 
-    def remove_unmapped_colmuns
+    def remove_unmapped_columns
       num_cols = @rows.first.length
       col_indices = (0...num_cols).reject { |i| @headers[i].nil? }  # any columns under headers unmatched by field_mapping are rejected
       @rows = @rows.transpose.values_at(*col_indices).transpose
@@ -83,8 +84,8 @@ module CSVPort
       #raise HippoDataError.new(:incomplete_row) unless empty_fields.empty?
     #end
 
-    def hash_rows
-      @table.map { |row| row.to_hash }
+    def get_records
+      table.map { |row| Record.new(row.to_hash) }
     end
 
     def file(infilepath)
