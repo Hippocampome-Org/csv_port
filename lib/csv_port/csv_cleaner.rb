@@ -8,30 +8,31 @@ module CSVPort
     end
 
     attr_accessor :rows
-    attr_accessor :record_transform 
+    attr_accessor :row_transform 
     attr_accessor :headers
     attr_accessor :table
 
     def initialize(infilepath, opts={})
-      @record_validator = opts[:record_validator] or nil
+      @row_validator = opts[:row_validator] or nil
+      @row_processor = opts[:row_processor] or nil
       @raw_rows = CSV.read(infilepath)
       @headers, @rows = nil, nil
-      @table = clean
     end
 
-    def clean
+    def process
       prepare_headers  # manipulates upper part of CSV to obtain a top row of headers ready for mapping
       trim_whitespace_from_headers
       map_headers_to_internal_names  # replaces headers with value from @field_mapping or nil if not present
       remove_unmapped_columns  # remove columns not present in @field_mapping
       convert_array_rows_to_hashes  # headers become the keys
-      remove_badly_formed_rows if @record_validator  # all rows are accepted if no validator is provided
-      table = make_csv_table  # CSV::Table class
+      remove_badly_formed_rows if @row_validator  # all rows are accepted if no validator is provided
+      subprocess_rows if @processor
+      hash_rows
     end
 
     def prepare_headers
       @headers = @rows.shift
-      @record_transform = 2  # +1 for counting from 0, +1 for header row
+      @row_transform = 2  # +1 for counting from 0, +1 for header row
     end
 
     def trim_whitespace_from_headers
@@ -56,13 +57,20 @@ module CSVPort
     def remove_badly_formed_rows  # globals are set for the validator to log errors
       $file = @filename
       @rows = @rows.map.with_index do |row, i|
-        $row = i + @record_transform
-        @record_validator.new(row).validate
+        $row = i + @row_transform
+        @row_validator.new(row).validate
       end
       @rows.compact!  # remove nil values that replace invalid rows
     end
 
-    def make_csv_table
+    def process_rows
+      @rows = @rows.map_with_index do |row, i|
+        $row = i + @row_transform
+        @row_processor.new(row).process
+      end
+    end
+
+    def table
       CSV::Table.new(@rows)
     end
 

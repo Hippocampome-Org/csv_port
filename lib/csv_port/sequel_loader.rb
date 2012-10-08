@@ -29,8 +29,8 @@ module CSVPort
 
     ### LOAD
 
-    def load(model, opts={})  # :match_on is an array or :all
-      match_fields = opts[:match_on] or :all
+    def load_model(model, opts={})  # :match_on is an array or :all
+      match_fields = (opts[:match_on] or :all)
       model_to_match = get_model_to_match(model, match_fields)
       name = model.to_s
       table_name = model.class.to_s
@@ -55,17 +55,17 @@ module CSVPort
       elsif match_fields == :none
         nil
       else
-        values = model.values.select do |field, value|
-          match_fields.include?(field)
-        end
+        values = model.values.values_at(match_fields)
         model.new(values)
       end
     end
 
     ### LINK
 
+    # each model passed to link should already match exactly one model in the DB
     def link(*models)
       properties = (models.last.class == Hash ? models.pop : {})
+      models = fill_model_ids(models)
       link_model = create_link_model(models, properties)
       model_strs = models.map { |m| m.class.to_s + " " + m.id.to_s }
       print "Attempting to link " + model_strs.join(" to ") + "..." 
@@ -78,6 +78,12 @@ module CSVPort
         puts "newly linked"
       end
       link_model
+    end
+
+    def fill_model_ids(models)
+      models.map do |model|
+        match(model)
+      end
     end
 
     def create_link_model(models, properties={})

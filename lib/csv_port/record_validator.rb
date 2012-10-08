@@ -9,17 +9,45 @@ module CSVPort
     # - should set a global variable $col with the name of the field being checked
     # - should catch and file exceptions thrown by the various checks
 
+    @tests = [
+      {
+        name: "empty record",
+        field: nil,
+        test: lambda { not @record.values.any? },
+        error_data: {
+          type: :empty_row 
+        }
+      },
+      {
+        name: "required_fields",
+        field: nil,
+        test: lambda { @record.select {|field, value| value.nil?}.any? },
+        error_data: {
+          type: :missing_field,
+          fields: @record.select{ |field, value| value.nil? }.keys
+        }
+      }
+    ]
+
+    attr_accessor :tests
+
     def initialize(record)
       @record = record
+      if self.class == RecordValidator
+        @tests = self.class.tests
+      else
+        @tests = self.class.superclass.tests.merge(self.class.tests)
+      end
     end
 
-    def check_for_empty_record
-      raise InvalidRecordError.new(:type => :empty_record) if not @row.values.any?
-    end
-
-    def check_for_required_fields
-      missing_fields = @record.select { |field, value| value.nil? }
-      raise InvalidRecordError.new(:type => :incomplete_record, :empty_fields => missing_fields.keys) if missing_fields.any?
+    def validate
+      @tests.each do |test|
+        $field = test[:field]
+        pass = test[:test].call
+        if not pass
+          raise InvalidRecordError.new(test[:error_data])
+        end
+      end
     end
 
   end

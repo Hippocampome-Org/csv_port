@@ -7,21 +7,20 @@ module CSVPort
     def self.newproject(root_path, opts={})
       @root_path = root_path
       @project_name = File.basename(root_path)
-      @config_filepath = opts[:config_filepath]
-      binding.pry
+      @config_filepath = opts[:config]
       Dir.mkdir(root_path) unless Dir.exists?(root_path)
-      folders = ['data', 'db', 'bin', 'lib', "lib/#{project_name}"]
+      folders = ['data', 'db', 'bin', 'lib', "lib/#{@project_name}"]
       folders.each do |folder|
         folderpath = File.expand_path(folder, root_path)
         Dir.mkdir(folderpath)
       end
-      create_file('config.rb', copy_file: @config_filepath) { |str| str.gsub('!!NAME!!', project_name) }
+      create_file('config.rb', copy_file: @config_filepath) { |str| str.gsub('!!NAME!!', @project_name) }
       create_file('bin/build')
-      create_file("lib/#{project_name}", :lib_base) do |str|
-        module_name = camelcase_str(project_name)
-        str.gsub('!!NAME!!', module_name)
+      create_file("lib/#{@project_name}.rb", :template_name => :lib_base) do |str|
+        module_name = camelcase_str(@project_name)
+        str = str.gsub('!!NAME!!', module_name)
         require_string = build_require_string
-        str.gsub('!!REQUIRE!!', require_string)
+        str = str.gsub('!!REQUIRE!!', require_string)
       end
       create_file('data/error_log.json')
       create_file('db/db_connection.rb')
@@ -42,18 +41,18 @@ module CSVPort
       FileUtils.chmod('+x', filepath) if File.extname(filepath).empty?
     end
 
-    def build_require_string
+    def self.build_require_string
       if @config_filepath
         config_lines = File.readlines(@config_filepath)
         require_line_arrays = ['cleaner', 'record_validator', 'record_loader'].map do |field|
           lines = config_lines.select { |line| line.match(/^\s*#{field}/) }
           require_line_array =  lines.map do |line|
-            klass_name = line.slice(/::(.*)$/, 1)
+            klass_name = line.slice(/::(.*?),?$/, 1)
             require_name = underscore_str(klass_name)
-            require_line = 'require ' + @project_name + '/' + require_name
+            require_line = 'require ' + "'" + @project_name + '/' + require_name + "'"
           end
         end
-        require_lines = require_line_arrays.flatten
+        require_lines = require_line_arrays.flatten.uniq
         require_string = require_lines.sort.join("\n")
       else
         require_string = ""
@@ -61,11 +60,11 @@ module CSVPort
       return require_string
     end
 
-    def camelcase_str(str)
+    def self.camelcase_str(str)
       str.to_s.split('_').map{ |word| word[0].upcase + word[1..-1] }.join('')
     end
 
-    def underscore_str(str)
+    def self.underscore_str(str)
       str.gsub(/([a-z1-9])([A-Z])/, "\\1_\\2").downcase
     end
 

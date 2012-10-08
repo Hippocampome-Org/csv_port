@@ -46,7 +46,7 @@ module CSVPort
       initialize_helper_data
       initialize_error_log
       begin
-        source_data_hash.values.each { |source_file| load_source_file(source_file) }
+        @source_data_hash.values.each { |source_file| load_source_file(source_file) }
       ensure
         update_helper_data
         write_error_logs
@@ -63,7 +63,7 @@ module CSVPort
     def initialize_source_metadata
       source_data_pairs = SOURCE_DATA.map do |source|
           key = source[:filename].chomp(File.extname(source[:filename])) 
-          value = SourceFile.new(*source.values, SOURCE_DATA_DIRECTORY)
+          value = SourceFile.new(source, SOURCE_DATA_DIRECTORY)
           [key, value]
         end
       Hash [ source_data_pairs ]

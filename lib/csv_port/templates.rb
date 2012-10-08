@@ -10,6 +10,7 @@ module CSVPort
       attr_reader :config
       attr_reader :db_connection
       attr_reader :error_log
+      attr_reader :lib_base
 
     end
 

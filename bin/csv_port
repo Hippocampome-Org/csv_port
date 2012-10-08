@@ -8,12 +8,13 @@ require 'pry'
 module CSVPort
 
   include Methadone::Main
+  include Methadone::CLILogging
 
   main do |*args|
     begin
       command = args.first
       command_args = args[1..-1] << options
-      Commands.send(command, *args)
+      Commands.send(command, *command_args)
     rescue NoMethodError => e
       binding.pry
       puts "Command not defined"
@@ -21,6 +22,8 @@ module CSVPort
     rescue ArgumentError
       puts "Wrong arguments"
       # puts "USAGE: ..." (for particular command)
+    rescue StandardError => e
+      binding.pry
     end
   end
 
