@@ -23,17 +23,20 @@ module CSVPort
           require 'methadone'
 
           include Methadone::Main
+          include Methadone::CLILogging
 
           main do
-            path = File.expand_path('../'..', '__FILE__')
-            builder = Builder.new(path, options)
-            Builder.build
+            path = File.expand_path('..', '__FILE__')
+            builder = CSVPort::Builder.new(path, options)
+            builder.build
           end
 
           on("-e", "--empty", "Empty the database")
           on("-u", "--update", "Update the database")
 
           description "Builds the database from source files"
+
+          go!
         BUILD
 
 

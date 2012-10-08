@@ -11,12 +11,12 @@ module CSVPort
 
     Processor = Struct.new(:inputs, :code, :outputs, :options)
 
-    def initialize(data)
+    def initialize(data, directory)
       @filename = data[:filename]
-      @cleaner = (data[:cleaner] or CSVPort::CSVCleaner)
+      @cleaner = (data[:cleaner]  ? eval(data[:cleaner]) : CSVCleaner)
+      data[:processors] << "CSVPort::RecordValidator" unless data[:processors].first.include?("Validator")  #default
       @processors = data[:processors].map do |processor|
-        processor = Processor.new(processor.values)
-        processor.options ||= {}
+        eval(processor)
       end
       @filepath = File.expand_path(filename, directory)
       @filetype = File.extname(filename).delete('.')

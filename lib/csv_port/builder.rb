@@ -36,15 +36,19 @@ module CSVPort
     end
 
     def build
+      begin
       set_up_environment
-      initialize_source_metadata
-      update_source_files if @options[:update_source_files]  # copies and converts all source data to utf-8
-      empty_database if @options[:empty_database]  # will erase current database of name 'hippocampome'
       open_database_connection
       load_models
       load_porting_library
+      initialize_source_metadata
+      update_source_files if @options[:update_source_files]  # copies and converts all source data to utf-8
+      empty_database if @options[:empty_database]  # will erase current database of name 'hippocampome'
       initialize_helper_data
       initialize_error_log
+      rescue StandardError => e
+        binding.pry
+      end
       begin
         @source_data_hash.values.each { |source_file| load_source_file(source_file) }
       ensure
@@ -58,6 +62,18 @@ module CSVPort
 
     def set_up_environment
       require File.expand_path('config', @path)
+    end
+
+    def open_database_connection
+      require File.expand_path('db/db_connection', @path)
+    end
+
+    def load_models
+      require File.expand_path('db/models', @path)  # stored in the db directory added above
+    end
+
+    def load_porting_library
+      require File.expand_path("lib/#{PORTING_LIBRARY}", @path)
     end
 
     def initialize_source_metadata
@@ -79,18 +95,6 @@ module CSVPort
       `mysqldump -d -u#{DB_USERNAME} -p#{DB_PASSWORD} --add-drop-table #{DB_NAME} > #{temp_filename}`  # dump schema with no data
       `mysql -u#{DB_USERNAME} -p#{DB_PASSWORD} #{DB_NAME} < #{temp_filename}`  # load schema
       FileUtils.rm(temp_filename)
-    end
-
-    def open_database_connection
-      require File.expand_path('../../db/db_connection', @path)
-    end
-
-    def load_models
-      require File.expand_path('../../db/models', @path)  # stored in the db directory added above
-    end
-
-    def load_porting_library
-      require File.expand_path("../../lib/#{PORTING_LIBRARY}")
     end
 
     def initialize_helper_data

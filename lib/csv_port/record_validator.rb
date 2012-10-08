@@ -22,9 +22,11 @@ module CSVPort
         name: "required_fields",
         field: nil,
         test: lambda { @record.select {|field, value| value.nil?}.any? },
-        error_data: {
-          type: :missing_field,
-          fields: @record.select{ |field, value| value.nil? }.keys
+        error_data: lambda {
+          {
+            type: :missing_field,
+            fields: @record.select{ |field, value| value.nil? }.keys
+          }
         }
       }
     ]
@@ -45,9 +47,18 @@ module CSVPort
         $field = test[:field]
         pass = test[:test].call
         if not pass
-          raise InvalidRecordError.new(test[:error_data])
+          raise_exception(test)
         end
       end
+    end
+
+    def raise_exception(test)
+      if test[:error_data].class == Proc
+        error_data = test[:error_data].call
+      else
+        error_data = test[:error_data]
+      end
+      raise InvalidRecordError.new(error_data)
     end
 
   end
