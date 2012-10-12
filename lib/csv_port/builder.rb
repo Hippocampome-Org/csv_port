@@ -29,13 +29,17 @@ module CSVPort
 
     AuxilaryFile = Struct.new(:filename, :filetype, :filepath, :data)
 
-    def initialize(path, project_name=nil, options={})
+    attr_accessor :error_data_hash
+    attr_accessor :helper_data_hash
+
+    def initialize(path, options={})
       @path = path
       @options = options
       @project_name ||= File.basename(path) 
     end
 
     def build
+      $builder = self
       set_up_environment
       open_database_connection
       load_models
@@ -71,13 +75,15 @@ module CSVPort
     end
 
     def load_porting_library
-      require File.expand_path("lib/#{PORTING_LIBRARY}", @path)
+      require File.expand_path("lib/#{PORTING_LIBRARY[:filename]}", @path)
     end
 
     def initialize_source_metadata
       source_data_pairs = SOURCE_DATA.map do |source|
-          key = source[:filename].chomp(File.extname(source[:filename])) 
-          value = SourceFile.new(source, SOURCE_DATA_DIRECTORY)
+        key = source.target
+          data = PORTING_LIBRARY[:module_name].FILE_DATA[:key]
+          data.update({ filename: source.filename })
+          value = SourceFile.new(data, SOURCE_DATA_DIRECTORY)
           [key, value]
         end
       @source_data_hash = Hash[ source_data_pairs ]
@@ -101,7 +107,7 @@ module CSVPort
         value = create_auxilary_file(filename, HELPER_DATA_DIRECTORY)
         [key, value]
       end
-      HELPER_DATA_HASH = Hash[ helper_data_pairs ]
+      @helper_data_hash = Hash[ helper_data_pairs ]
     end
 
     def initialize_error_data
@@ -110,7 +116,7 @@ module CSVPort
         value = create_auxilary_file(filename, ERROR_DATA_DIRECTORY)
         [key, value]
       end
-      ERROR_DATA_HASH = Hash[ error_data_pairs ]
+      @error_data_hash = Hash[ error_data_pairs ]
     end
 
         def create_auxilary_file(filename, directory)

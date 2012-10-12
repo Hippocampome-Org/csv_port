@@ -7,21 +7,15 @@ module CSVPort
 
     def initialize(data={})
       @data = data
-      original_column_name = $field_mapping.invert[$col]
-      @data.update({row: $row, column: original_column_name})
+      original_column_name = $field_mapping.invert[$field]
+      @data.update({row: $row, field: $field})
     end
 
     def log(additional_data={})
-      ERROR_DATA_HASH[:error_log] << @data.merge(additional_data)
+      $builder.error_data_hash[:error_log].data << @data.merge(additional_data)
     end
 
 
-  end
-
-  class EmptyFieldError < StandardError
-  end
-
-  class EmptyRowError < StandardError
   end
 
 end

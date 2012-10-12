@@ -9,11 +9,16 @@ module CSVPort
     # - should set a global variable $col with the name of the field being checked
     # - should catch and file exceptions thrown by the various checks
 
+    class << self
+      attr_accessor :tests
+      attr_accessor :required_fields  # no value for the base class
+    end
+
     @tests = [
       {
-        name: "empty record",
+        name: "not empty record",
         field: nil,
-        test: lambda { not @record.values.any? },
+        test: lambda { @record.fields.values.any? },
         error_data: {
           type: :empty_row 
         }
@@ -21,11 +26,11 @@ module CSVPort
       {
         name: "required_fields",
         field: nil,
-        test: lambda { @record.select {|field, value| value.nil?}.any? },
+        test: lambda { @required_fields.select {|field| @record.fields[:field].nil?}.any? },
         error_data: lambda {
           {
             type: :missing_field,
-            fields: @record.select{ |field, value| value.nil? }.keys
+            fields: @required_fields.select{ |field, value| value.nil? }.keys
           }
         }
       }
@@ -33,8 +38,10 @@ module CSVPort
 
     attr_accessor :tests
 
-    def initialize(record)
+    def initialize(record, opts={})
+      #binding.pry
       @record = record
+      @required_fields = (self.class.required_fields or opts[:required_fields] or [])
       if self.class == RecordValidator
         @tests = self.class.tests
       else
@@ -45,16 +52,17 @@ module CSVPort
     def process
       @tests.each do |test|
         $field = test[:field]
-        pass = test[:test].call
+        pass = instance_exec &test[:test]
         if not pass
           raise_exception(test)
         end
       end
+      return @record
     end
 
     def raise_exception(test)
       if test[:error_data].class == Proc
-        error_data = test[:error_data].call
+        error_data = instance_exec &test[:error_data]
       else
         error_data = test[:error_data]
       end

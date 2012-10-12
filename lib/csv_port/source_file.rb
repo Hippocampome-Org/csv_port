@@ -14,6 +14,8 @@ module CSVPort
     def initialize(data, directory)
       @filename = data[:filename]
       @cleaner = (data[:cleaner]  ? eval(data[:cleaner]) : CSVCleaner)
+      @field_mapping = (data[:field_mapping] or nil)
+      @prepare_headers_proc = (data[:prepare_headers] or nil)
       data[:processors].unshift("CSVPort::RecordValidator") unless data[:processors].first.include?("Validator")  #default
       @processors = data[:processors].map do |processor|
         eval(processor)
@@ -26,9 +28,12 @@ module CSVPort
     def load
       $file = @filename
       puts "---LOADING #{@filename}......................"
-      data = @cleaner.new(@filepath).process
-      data.map! { |record| process_record(record) }
+      data = @cleaner.new(@filepath, prepare_headers: @prepare_headers_proc, field_mapping: @field_mapping).process
+      binding.pry
+      data = data.map.with_index { |record, i| $row = i; process_record(record) }
+      binding.pry
       data.flatten!  # a single record may be expanded to multiple records during processing
+      binding.pry
       data.each { |record| @loader.new(record).load }
       #records.each_with_index do |record, i|
         #$record = i + cleaned_file.record_transform
@@ -41,11 +46,21 @@ module CSVPort
     def process_record(start_record)
       records = [start_record]  # we use an array to allow for expansion of the record
       @processors.each do |processor|
-        records = records.map { |record| processor.new(record).process }
-        #records = records.map { |record| processor_step(processor, record) }
+        #records = records.map { |record| processor.new(record).process }
+        records = records.map { |record| processor_step(processor, record) }
         records.flatten!
+        records.compact!  # drop records that threw exceptions
       end
+      #binding.pry
       return records
+    end
+
+    def processor_step(processor, record)
+      #binding.pry
+      processor.new(record).process
+    rescue InvalidRecordError => e
+      e.log
+      return nil
     end
 
     #def processor_step(processor, record)

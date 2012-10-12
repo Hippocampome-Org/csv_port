@@ -15,12 +15,15 @@ module CSVPort
     def initialize(infilepath, opts={})
       @row_validator = opts[:row_validator] or nil
       @row_processor = opts[:row_processor] or nil
+      @field_mapping = opts[:field_mapping] or nil
+      define_singleton_method(:prepare_headers, opts[:prepare_headers]) if opts[:prepare_headers]
+      #@prepare_headers_proc = opts[:prepare_headers] or nil
       @rows = CSV.read(infilepath)
       @headers = nil
     end
 
     def process
-      $field_mapping = @field_mapping
+      $field_mapping = self.class.field_mapping
       prepare_headers  # manipulates upper part of CSV to obtain a top row of headers ready for mapping
       trim_whitespace_from_headers
       map_headers_to_internal_names  # replaces headers with value from @field_mapping or nil if not present
@@ -34,6 +37,7 @@ module CSVPort
     def prepare_headers
       @headers = @rows.shift
       @row_transform = 2  # +1 for counting from 0, +1 for header row
+      #instance_exec @prepare_headers_proc if @prepare_headers_proc# !!temprorary hack
     end
 
     def trim_whitespace_from_headers
