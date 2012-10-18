@@ -26,11 +26,11 @@ module CSVPort
       {
         name: "required_fields",
         field: nil,
-        test: lambda { @required_fields.select {|field| @record.fields[:field].nil?}.any? },
+        test: lambda { @required_fields.map {|field| @record.fields[field]}.all? },
         error_data: lambda {
           {
             type: :missing_field,
-            fields: @required_fields.select{ |field, value| value.nil? }.keys
+            fields: @required_fields.select{ |field| @record.fields[field].nil? }
           }
         }
       }
@@ -42,11 +42,13 @@ module CSVPort
       #binding.pry
       @record = record
       @required_fields = (self.class.required_fields or opts[:required_fields] or [])
-      if self.class == RecordValidator
-        @tests = self.class.tests
-      else
-        @tests = self.class.superclass.tests.merge(self.class.tests)
-      end
+      @tests = self.class.tests
+      @tests += opts[:tests] if opts[:tests]
+      #if self.class == RecordValidator
+        #@tests = self.class.tests
+      #else
+        #@tests = self.class.superclass.tests.merge(self.class.tests)
+      #end
     end
 
     def process

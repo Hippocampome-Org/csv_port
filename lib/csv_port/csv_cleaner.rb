@@ -23,14 +23,14 @@ module CSVPort
     end
 
     def process
-      $field_mapping = self.class.field_mapping
+      $field_mapping = @field_mapping
       prepare_headers  # manipulates upper part of CSV to obtain a top row of headers ready for mapping
       trim_whitespace_from_headers
       map_headers_to_internal_names  # replaces headers with value from @field_mapping or nil if not present
       remove_unmapped_columns  # remove columns not present in @field_mapping
       convert_array_rows_to_hashes  # headers become the keys
-      remove_badly_formed_rows if @row_validator  # all rows are accepted if no validator is provided
-      subprocess_rows if @processor
+      #remove_badly_formed_rows if @row_validator  # all rows are accepted if no validator is provided
+      #subprocess_rows if @processor
       get_records
     end
 
@@ -45,7 +45,7 @@ module CSVPort
     end
 
     def map_headers_to_internal_names
-      @headers.map!{ |h| self.class.field_mapping[h] }
+      @headers.map!{ |h| @field_mapping[h] }
     end
 
     def remove_unmapped_columns

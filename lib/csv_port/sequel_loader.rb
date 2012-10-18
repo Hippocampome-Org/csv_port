@@ -40,7 +40,8 @@ module CSVPort
         model = existing_model
         puts "already present"
       elsif existing_model
-        model = existing_model.update(model.values)
+        existing_model.update(model.values)
+        model = existing_model
         puts "match is present, record updated"
       else
         model = model.save
@@ -55,8 +56,10 @@ module CSVPort
       elsif match_fields == :none
         nil
       else
-        values = model.values.values_at(match_fields)
-        model.new(values)
+        #binding.pry
+        match_fields = [match_fields] unless match_fields.class == Array
+        values = model.values.select { |field, value| match_fields.include?(field) }
+        model.class.new(values)
       end
     end
 
@@ -64,6 +67,7 @@ module CSVPort
 
     # each model passed to link should already match exactly one model in the DB
     def link(*models)
+      binding.pry if models.select{ |model| model.nil? }.any?
       properties = (models.last.class == Hash ? models.pop : {})
       models = fill_model_ids(models)
       link_model = create_link_model(models, properties)
@@ -82,7 +86,7 @@ module CSVPort
 
     def fill_model_ids(models)
       models.map do |model|
-        match(model)
+        model.id ? model : match(model)
       end
     end
 

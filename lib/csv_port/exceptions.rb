@@ -8,7 +8,7 @@ module CSVPort
     def initialize(data={})
       @data = data
       original_column_name = $field_mapping.invert[$field]
-      @data.update({row: $row, field: $field})
+      @data.update({row: $row, field: $field, file: $file})
     end
 
     def log(additional_data={})

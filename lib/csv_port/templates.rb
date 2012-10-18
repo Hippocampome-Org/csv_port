@@ -31,8 +31,9 @@ module CSVPort
             builder.build
           end
 
-          on("-e", "--empty", "Empty the database")
-          on("-u", "--update", "Update the database")
+          on("-c", "--clear_errors", "Clear error logs")
+          on("-e", "--empty_database", "Empty the database")
+          on("-u", "--update_source_files", "Update source files")
 
           description "Builds the database from source files"
 
@@ -91,6 +92,8 @@ module CSVPort
 
         end
       LIB_BASE
+
+      @models = "### DB MODELS HERE ###"
 
   end
 end

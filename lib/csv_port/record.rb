@@ -16,6 +16,10 @@ module CSVPort
       end
     end
 
+    def [](field)
+      @fields[field]
+    end
+
     def each
       @fields.each { |key, value| yield(key, value) }
     end

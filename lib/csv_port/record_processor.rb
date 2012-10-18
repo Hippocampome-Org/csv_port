@@ -12,6 +12,7 @@ module CSVPort
     end
 
     def export_record
+      remove_instance_variable("@record")
       pairs = self.instance_variables.map do |ivar| 
         key = ivar.to_s.delete('@').to_sym
         value = eval(ivar.to_s)

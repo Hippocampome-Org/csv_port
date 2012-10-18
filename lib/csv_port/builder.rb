@@ -17,6 +17,7 @@ module CSVPort
 
     class << self
       attr_accessor :auxilary_loader_methods
+      attr_accessor :auxilary_writer_methods
     end
 
     # Should all return arrays of hashes
@@ -25,6 +26,11 @@ module CSVPort
       'json' => lambda { |filepath| JSON.load(File.new(filepath, 'r')) },
       #'yaml' => { class: YAML, method: :load },
       #'yml' => { class: YAML, method: :load },
+    }
+
+    @auxilary_writer_methods = {
+      'csv' => lambda { |filepath, data| File.write(filepath, data.to_csv) },
+      'json' => lambda { |filepath, data| File.write(filepath, JSON.pretty_generate(data)) },
     }
 
     AuxilaryFile = Struct.new(:filename, :filetype, :filepath, :data)
@@ -39,18 +45,19 @@ module CSVPort
     end
 
     def build
+      begin
       $builder = self
       set_up_environment
+      clear_errors if @options[:clear_errors]
       open_database_connection
+      empty_database if @options[:empty_database]  # will erase current database of name 'hippocampome'
       load_models
       load_porting_library
       initialize_source_metadata
       update_source_files if @options[:update_source_files]  # copies and converts all source data to utf-8
-      empty_database if @options[:empty_database]  # will erase current database of name 'hippocampome'
       initialize_helper_data
       initialize_error_data
-      begin
-        @source_data_hash.values.each { |source_file| load_source_file(source_file) }
+      @source_data_hash.values.each { |source_file| load_source_file(source_file) }
       rescue StandardError => e
         binding.pry
       ensure
@@ -64,6 +71,12 @@ module CSVPort
 
     def set_up_environment
       require File.expand_path('config', @path)
+    end
+
+    def clear_errors
+      ERROR_DATA.map do |filename|
+        File.write(File.expand_path(filename, ERROR_DATA_DIRECTORY), "[]")
+      end
     end
 
     def open_database_connection
@@ -80,16 +93,16 @@ module CSVPort
 
     def initialize_source_metadata
       source_data_pairs = SOURCE_DATA.map do |source|
-        key = source.target
-          data = PORTING_LIBRARY[:module_name].FILE_DATA[:key]
-          data.update({ filename: source.filename })
+        key = source[:target]
+          data = eval(PORTING_LIBRARY[:module_name])::PORT_DATA[key]
+          data.update({ filename: source[:filename]})
           value = SourceFile.new(data, SOURCE_DATA_DIRECTORY)
           [key, value]
         end
       @source_data_hash = Hash[ source_data_pairs ]
     end
 
-    def update_csvs
+    def update_source_files
       filenames = @source_data_hash.map { |symbol, source_file| source_file.filename }
       CSVPort.build_directory(EXTERNAL_SOURCE_DATA_DIRECTORY, SOURCE_DATA_DIRECTORY, filenames, encoding: "utf-8")
     end
@@ -133,14 +146,16 @@ module CSVPort
     end
 
     def update_helper_data
-      HELPER_DATA_HASH.each do |symbol, hash|
-        File.write(hash[:path], JSON.pretty_generate(hash[:data]))
+      @helper_data_hash.each do |key, file|
+        writer_method = self.class.auxilary_writer_methods[file.filetype]
+        writer_method.call(file.filepath, file.data)
       end
     end
 
     def write_error_logs
-      ERROR_LOG_HASH.each do |symbol, hash|
-        File.write(hash[:path], JSON.pretty_generate(hash[:data]))
+      @error_data_hash.each do |key, file|
+        writer_method = self.class.auxilary_writer_methods[file.filetype]
+        writer_method.call(file.filepath, file.data)
       end
     end
 
