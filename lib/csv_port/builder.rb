@@ -9,8 +9,6 @@ require 'csv'
 require 'json'
 require 'pry'
 
-require 'csv_port'
-
 module CSVPort
 
   class Builder
@@ -45,25 +43,22 @@ module CSVPort
     end
 
     def build
-      begin
       $builder = self
       set_up_environment
+      initialize_helper_data
+      initialize_error_data
       clear_errors if @options[:clear_errors]
       open_database_connection
       empty_database if @options[:empty_database]  # will erase current database of name 'hippocampome'
+      add_views if @options[:add_views]
       load_models
       load_porting_library
       initialize_source_metadata
       update_source_files if @options[:update_source_files]  # copies and converts all source data to utf-8
-      initialize_helper_data
-      initialize_error_data
       @source_data_hash.values.each { |source_file| load_source_file(source_file) }
-      rescue StandardError => e
-        binding.pry
-      ensure
-        update_helper_data
-        write_error_logs
-      end
+    ensure
+      update_helper_data
+      write_error_logs
     end
 
 
@@ -112,6 +107,12 @@ module CSVPort
       `mysqldump -d -u#{DB_USERNAME} -p#{DB_PASSWORD} --add-drop-table #{DB_NAME} > #{temp_filename}`  # dump schema with no data
       `mysql -u#{DB_USERNAME} -p#{DB_PASSWORD} #{DB_NAME} < #{temp_filename}`  # load schema
       FileUtils.rm(temp_filename)
+    end
+
+    def add_views
+      view_filename = @project_name + "_views.sql"
+      view_filepath = File.expand_path(view_filename, @path)
+      `mysql -u#{DB_USERNAME} -p#{DB_PASSWORD} #{DB_NAME} < #{view_filepath}`  # load schema
     end
 
     def initialize_helper_data

@@ -1,4 +1,3 @@
-require 'csv_port/templates'
 
 module CSVPort
 
