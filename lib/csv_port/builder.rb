@@ -47,6 +47,7 @@ module CSVPort
       set_up_environment
       initialize_helper_data
       initialize_error_data
+      binding.pry
       clear_errors if @options[:clear_errors]
       open_database_connection
       empty_database if @options[:empty_database]  # will erase current database of name 'hippocampome'
