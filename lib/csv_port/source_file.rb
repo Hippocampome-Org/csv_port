@@ -43,6 +43,7 @@ module CSVPort
       data.compact!
       #binding.pry
       data = data.map.with_index { |record, i| $row = i + @row_transform; process_record(record) }
+      data.compact!
       #data.flatten!  # a single record may be expanded to multiple records during processing
       #binding.pry
       data.each_with_index { |record_set, i| $row = i + @row_transform; record_set.each { |record| load_record(record) }}

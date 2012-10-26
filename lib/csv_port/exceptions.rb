@@ -12,6 +12,7 @@ module CSVPort
     end
 
     def log(additional_data={})
+      #binding.pry if data[:type] == :badly_formatted_field
       $builder.error_data_hash[:error_log].data << @data.merge(additional_data)
     end
 

@@ -45,10 +45,9 @@ module CSVPort
     def build
       $builder = self
       set_up_environment
+      clear_errors if @options[:clear_errors]
       initialize_helper_data
       initialize_error_data
-      binding.pry
-      clear_errors if @options[:clear_errors]
       open_database_connection
       empty_database if @options[:empty_database]  # will erase current database of name 'hippocampome'
       add_views if @options[:add_views]
