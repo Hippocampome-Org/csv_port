@@ -14,24 +14,30 @@ module CSVPort
   class Builder
 
     class << self
-      attr_accessor :auxilary_loader_methods
-      attr_accessor :auxilary_writer_methods
+      attr_accessor :auxiliary_loader_methods
+      attr_accessor :auxiliary_writer_methods
+      attr_accessor :auxiliary_templates
     end
 
     # Should all return arrays of hashes
-    @auxilary_loader_methods = {
+    @auxiliary_loader_methods = {
       'csv' => lambda { |filepath| CSV.read(filepath, headers: true).map{ |row| row.to_hash }},
       'json' => lambda { |filepath| JSON.load(File.new(filepath, 'r')) },
       #'yaml' => { class: YAML, method: :load },
       #'yml' => { class: YAML, method: :load },
     }
 
-    @auxilary_writer_methods = {
+    @auxiliary_writer_methods = {
       'csv' => lambda { |filepath, data| File.write(filepath, data.to_csv) },
       'json' => lambda { |filepath, data| File.write(filepath, JSON.pretty_generate(data)) },
     }
 
-    AuxilaryFile = Struct.new(:filename, :filetype, :filepath, :data)
+    @auxiliary_templates = {
+      'csv' => '',
+      'json' => []
+    }
+
+    AuxiliaryFile = Struct.new(:filename, :filetype, :filepath, :data)
 
     attr_accessor :error_data_hash
     attr_accessor :helper_data_hash
@@ -118,7 +124,7 @@ module CSVPort
     def initialize_helper_data
       helper_data_pairs = HELPER_DATA.map do |filename|
         key = filename.chomp(File.extname(filename)).to_sym
-        value = create_auxilary_file(filename, HELPER_DATA_DIRECTORY)
+        value = create_auxiliary_file(filename, HELPER_DATA_DIRECTORY)
         [key, value]
       end
       @helper_data_hash = Hash[ helper_data_pairs ]
@@ -127,19 +133,20 @@ module CSVPort
     def initialize_error_data
       error_data_pairs = ERROR_DATA.map do |filename|
         key = filename.chomp(File.extname(filename)).to_sym
-        value = create_auxilary_file(filename, ERROR_DATA_DIRECTORY)
+        value = create_auxiliary_file(filename, ERROR_DATA_DIRECTORY)
         [key, value]
       end
       @error_data_hash = Hash[ error_data_pairs ]
     end
 
-        def create_auxilary_file(filename, directory)
+        def create_auxiliary_file(filename, directory)
           extension = File.extname(filename)
           filetype= extension.delete('.')
-          loader_method = self.class.auxilary_loader_methods[filetype]
+          loader_method = self.class.auxiliary_loader_methods[filetype]
           filepath = File.expand_path(filename, directory)
+          File.write(filepath, self.class.auxiliary_templates[filetype]) if not File.exists?(filepath)
           data = loader_method.call(filepath)
-          AuxilaryFile.new(filename, filetype, filepath, data)
+          AuxiliaryFile.new(filename, filetype, filepath, data)
         end
 
     def load_source_file(source_file)
@@ -148,14 +155,14 @@ module CSVPort
 
     def update_helper_data
       @helper_data_hash.each do |key, file|
-        writer_method = self.class.auxilary_writer_methods[file.filetype]
+        writer_method = self.class.auxiliary_writer_methods[file.filetype]
         writer_method.call(file.filepath, file.data)
       end
     end
 
     def write_error_logs
       @error_data_hash.each do |key, file|
-        writer_method = self.class.auxilary_writer_methods[file.filetype]
+        writer_method = self.class.auxiliary_writer_methods[file.filetype]
         writer_method.call(file.filepath, file.data)
       end
     end
