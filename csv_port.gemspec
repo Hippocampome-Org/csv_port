@@ -15,4 +15,7 @@ Gem::Specification.new do |gem|
   gem.name          = "csv_port"
   gem.require_paths = ["lib"]
   gem.version       = CSVPort::VERSION
+
+  gem.add_dependency 'rchardet19'
+
 end
