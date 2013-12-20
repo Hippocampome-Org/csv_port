@@ -17,5 +17,6 @@ Gem::Specification.new do |gem|
   gem.version       = CSVPort::VERSION
 
   gem.add_dependency 'rchardet19'
+  gem.add_dependency 'sequel'
 
 end
