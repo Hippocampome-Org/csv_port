@@ -18,5 +18,8 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency 'rchardet19'
   gem.add_dependency 'sequel'
+  gem.add_dependency 'outdent'
+  gem.add_dependency 'methadone'
+  gem.add_dependency 'pry'
 
 end
