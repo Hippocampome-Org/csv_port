@@ -18,7 +18,7 @@ module CSVPort
       @field_mapping = opts[:field_mapping] or nil
       define_singleton_method(:prepare_headers, opts[:prepare_headers]) if opts[:prepare_headers]
       #@prepare_headers_proc = opts[:prepare_headers] or nil
-      @rows = CSV.read(infilepath)
+      @rows = CSV.parse(File.read(infilepath, :encoding => 'utf-8'))
       @headers = nil
     end
 

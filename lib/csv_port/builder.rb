@@ -63,6 +63,7 @@ module CSVPort
       update_source_files if @options[:update_source_files]  # copies and converts all source data to utf-8
       @source_data_hash.values.each { |source_file| load_source_file(source_file) }
     ensure
+      binding.pry
       update_helper_data
       write_error_logs
     end
